@@ -1,6 +1,7 @@
 """Base classes and meta facilities for Config and ConfigSection classes"""
 
 import configparser
+import os
 from dataclasses import dataclass, fields as dataclass_fields, asdict as dataclass_asdict, InitVar
 from os import PathLike
 from typing import (Union, get_args, get_origin, ClassVar, MutableMapping, Any, Type, Callable,
@@ -240,6 +241,8 @@ class ConfigBase(CheckNoneNonOptionalFieldsMixin):
             else:
                 raise ValueError(f'Unknown path type "{type(path).__name__}"')
             for p in paths:
+                if not os.path.exists(p):
+                    raise FileNotFoundError(f'Config file path "{p}" does not exist.')
                 parser.read(p)
         cls_sections: MutableMapping[str, ConfigSectionBase] = {}
         for field in cls.get_section_fields():
