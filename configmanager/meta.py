@@ -1,5 +1,7 @@
 """Base classes and meta facilities for Config and ConfigSection classes"""
 
+from __future__ import annotations
+
 import configparser
 import os
 from dataclasses import dataclass, fields as dataclass_fields, asdict as dataclass_asdict, InitVar
@@ -117,7 +119,7 @@ class ConfigSectionBase(CheckNoneNonOptionalFieldsMixin):
         return converted_fields
 
     @classmethod
-    def from_config_section(cls, section: configparser.SectionProxy) -> 'ConfigSectionBase':
+    def from_config_section(cls, section: configparser.SectionProxy) -> ConfigSectionBase:
         """
         Convert a configparser config section and return an initialized class instance.
         :param section: The configparser.SectionProxy instance to be converted
@@ -152,7 +154,7 @@ class ConfigSectionAutoNamed(ConfigSectionBase):
     section_name: ClassVar[str] = AUTO_NAME
 
 
-def config_dataclass(cls: Type['ConfigBase']) -> Type['ConfigBase']:
+def config_dataclass(cls: Type[ConfigBase]) -> Type[ConfigBase]:
     """
     A decorator for ConfigBase subclasses to ensure they're correctly defined.
     It converts the class to a dataclass, then checks that all fields are of ConfigSectionBase type,
@@ -163,7 +165,7 @@ def config_dataclass(cls: Type['ConfigBase']) -> Type['ConfigBase']:
     :raise TypeError: If any of the fields' type is not a subclass of ConfigSectionBase
     :raise ValueError: If any of the section names do not match the respective field name
     """
-    cls: Type['ConfigBase'] = dataclass(cls)
+    cls: Type[ConfigBase] = dataclass(cls)
     fields_to_check = cls.get_section_fields()
     wrong_type_fields = {field.name for field in fields_to_check
                          if not issubclass(field.type, ConfigSectionBase)}
@@ -222,7 +224,7 @@ class ConfigBase(CheckNoneNonOptionalFieldsMixin):
         self._config_path: Optional[PathType] = None
 
     @classmethod
-    def load(cls, path: Optional[Union[PathType, Sequence[PathType]]] = None, **parser_kwargs) -> 'ConfigBase':
+    def load(cls, path: Optional[Union[PathType, Sequence[PathType]]] = None, **parser_kwargs) -> ConfigBase:
         """
         Create a ConfigBase instance, optionally loading values from a .ini file
         :param path: An optional path or sequence of paths of .ini files to load the config values from
