@@ -235,6 +235,7 @@ class ConfigBase(CheckNoneNonOptionalFieldsMixin):
         parser = cls._config_parser_factory(**parser_kwargs)
         config_path = None
         if path is not None:
+            # noinspection PyTypeChecker
             if isinstance(path, (tuple, list)):
                 paths = path
             elif isinstance(path, (str, bytes, PathType)):
