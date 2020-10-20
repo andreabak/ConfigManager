@@ -115,7 +115,13 @@ class ConfigSectionBase(CheckNoneNonOptionalFieldsMixin):
         converted_fields: MutableMapping[str, Any] = {}
         for field in dataclass_fields(cls):
             if field.name in source_data:
-                converted_fields[field.name] = field.type(source_data[field.name])
+                value: Any
+                # TODO: Add more special cases
+                if field.type == bool:
+                    value = source_data[field.name] in ('1', 1, 'true', 'True', 'TRUE')
+                else:
+                    value = field.type(source_data[field.name])
+                converted_fields[field.name] = value
         return converted_fields
 
     @classmethod
