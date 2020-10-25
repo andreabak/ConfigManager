@@ -4,10 +4,10 @@ from __future__ import annotations
 
 import configparser
 import os
-from dataclasses import dataclass, fields as dataclass_fields, asdict as dataclass_asdict, InitVar
+from dataclasses import dataclass, fields as dataclass_fields, asdict as dataclass_asdict, InitVar, Field
 from os import PathLike
 from typing import (Union, get_args, get_origin, ClassVar, MutableMapping, Any, Type, Callable,
-                    Optional, Mapping, Sequence)
+                    Optional, Mapping, Sequence, Tuple)
 
 
 __all__ = [
@@ -24,24 +24,25 @@ __all__ = [
 PathType = Union[bytes, str, PathLike]
 
 
-def is_optional_type(tp):
+def is_optional_type(type_) -> bool:
     """
     Check if a type annotation is Optional, or allows None
-    :param tp: The type annotation
+    :param type_: The type annotation
     :return: True if the type is optional else False
     """
-    args = get_args(tp)
-    origin = get_origin(tp)
+    args = get_args(type_)
+    origin = get_origin(type_)
     return origin is Union and args is not None and type(None) in args
 
 
+# noinspection PyPep8Naming
+# pylint: disable=invalid-name
 class _AUTO_NAME:
     """
     A Sentinel object to signal that the class attribute ``section_name``
-    of a ``ConfigSectionBase`` subclass needs to be autmatically set.
+    of a ``ConfigSectionBase`` subclass needs to be automatically set.
     Using a class for better repr.
     """
-    pass
 
 
 AUTO_NAME = _AUTO_NAME()
@@ -88,9 +89,9 @@ class ConfigSectionBase(CheckNoneNonOptionalFieldsMixin):
         :param kwargs: keyword arguments passed to class definition
         """
         if getattr(cls, 'section_name', None) is None:
-            raise SyntaxError(f'Subclasses of ConfigSection must specify a class variable "section_name"'
-                              f' as a string representing the config section name'
-                              f' or AUTO_NAME to generate the "section_name" from a ConfigBase class\' field name')
+            raise SyntaxError('Subclasses of ConfigSection must specify a class variable "section_name"'
+                              ' as a string representing the config section name'
+                              ' or AUTO_NAME to generate the "section_name" from a ConfigBase class\' field name')
 
     def __post_init__(self):
         """
@@ -171,7 +172,7 @@ def config_dataclass(cls: Type[ConfigBase]) -> Type[ConfigBase]:
     :raise TypeError: If any of the fields' type is not a subclass of ConfigSectionBase
     :raise ValueError: If any of the section names do not match the respective field name
     """
-    cls: Type[ConfigBase] = dataclass(cls)
+    cls = dataclass(cls)
     fields_to_check = cls.get_section_fields()
     wrong_type_fields = {field.name for field in fields_to_check
                          if not issubclass(field.type, ConfigSectionBase)}
@@ -213,12 +214,13 @@ class ConfigBase(CheckNoneNonOptionalFieldsMixin):
     """An init-only argument that specifies the path of the .ini file used for initialization"""
 
     @classmethod
-    def get_section_fields(cls):
+    def get_section_fields(cls) -> Tuple[Field, ...]:
         """
         Returns the dataclass fields that represent config sections
         """
         return tuple(field for field in dataclass_fields(cls))
 
+    # pylint: disable=arguments-differ
     def __post_init__(self, config_parser: configparser.RawConfigParser, config_path: Optional[PathType] = None):
         """
         Dataclass init method.
@@ -227,7 +229,7 @@ class ConfigBase(CheckNoneNonOptionalFieldsMixin):
         """
         super().__post_init__()
         self._config_parser: configparser.RawConfigParser = config_parser
-        self._config_path: Optional[PathType] = None
+        self._config_path: Optional[PathType] = config_path
 
     @classmethod
     def load(cls, path: Optional[Union[PathType, Sequence[PathType]]] = None, **parser_kwargs) -> ConfigBase:
@@ -249,7 +251,8 @@ class ConfigBase(CheckNoneNonOptionalFieldsMixin):
                 config_path = path
             else:
                 raise ValueError(f'Unknown path type "{type(path).__name__}"')
-            for p in paths:
+            # Make sure all config paths exist
+            for p in paths:  # pylint: disable=invalid-name
                 if not os.path.exists(p):
                     raise FileNotFoundError(f'Config file path "{p}" does not exist.')
                 parser.read(p)
@@ -264,7 +267,7 @@ class ConfigBase(CheckNoneNonOptionalFieldsMixin):
         # noinspection PyArgumentList
         return cls(**cls_sections, config_parser=parser, config_path=config_path)
 
-    def save(self, path: Optional[PathType] = None, encoding='utf8', **write_kwargs):
+    def save(self, path: Optional[PathType] = None, encoding='utf8', **write_kwargs) -> None:
         """
         Save an .ini file using the configparser used to initialize the instance
         :param path: The .ini file path to save the config to.
