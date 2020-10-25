@@ -98,7 +98,8 @@ class ConfigSectionBase(CheckNoneNonOptionalFieldsMixin):
         Dataclass initialization method. Here we make sure that at initialization time
         the "section_name" class attribute is a valid name and not AUTO_NAME anymore (assertion only).
         """
-        assert self.section_name is not AUTO_NAME, f"{self.__class__.__name__} has uninitialized section_name"
+        if self.section_name is AUTO_NAME:
+            raise ValueError(f"{self.__class__.__name__} has uninitialized section_name")
         super().__post_init__()
 
     @classmethod
@@ -258,7 +259,9 @@ class ConfigBase(CheckNoneNonOptionalFieldsMixin):
                 parser.read(p)
         cls_sections: MutableMapping[str, ConfigSectionBase] = {}
         for field in cls.get_section_fields():
-            assert issubclass(field.type, ConfigSectionBase)
+            if not issubclass(field.type, ConfigSectionBase):
+                raise TypeError(f'Members of {cls.__name__} must be subclasses of {ConfigSectionBase.__name__}, '
+                                f'got: {repr(field)}')
             if field.name in parser:
                 section = field.type.from_config_section(parser[field.name])
             else:
@@ -283,7 +286,9 @@ class ConfigBase(CheckNoneNonOptionalFieldsMixin):
                              f' instance does not have any config_path stored')
         for field in self.get_section_fields():
             section = getattr(self, field.name)
-            assert isinstance(section, ConfigSectionBase)
+            if not isinstance(section, ConfigSectionBase):
+                raise TypeError(f'Members of {repr(self)} must be subclasses of {ConfigSectionBase.__name__}, '
+                                f'got: {repr(field)}')
             self._config_parser[field.name] = section.to_config_section(self._config_parser)
         with open(path, 'w', encoding=encoding) as fp:
             self._config_parser.write(fp, **write_kwargs)
