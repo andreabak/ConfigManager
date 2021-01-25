@@ -1,7 +1,7 @@
 """ConfigManager package for creating config dataclasses compatible with .ini files"""
 
-from . import meta
+from . import configmanager
 
-from .meta import *
+from .configmanager import *
 
-__all__ = meta.__all__
+__all__ = configmanager.__all__
